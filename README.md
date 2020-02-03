@@ -1,6 +1,8 @@
+## Overview
+![./images/api-front-door-overview.pdf](./images/api-front-door-overview.jpg)
 ## Deployment
-1. Deploy private-vpc-api to account 2
-1. Update cfn of public-vpi-api with details from private-vpc-api
+1. Deploy service-apig to account 2
+1. Update cfn of public-vpi-api with details from service-apig
 1. Deploy public-vpc-api to account 1
 
 1. Login to account 1 - target the NLB to the IP address of the VPCE eni

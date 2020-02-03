@@ -1,0 +1,6 @@
+region: eu-west-1
+deploymentBucket: serverless.galesoftware.net
+notificationEmail: edward.gale+notifications@gmail.com
+ami: ami-07683a44e80cd32c5
+keypair: serverless-artillery-ec2-reports-personal
+myCidr: '0.0.0.0/0'

@@ -1,0 +1,52 @@
+service: service-apig
+provider:
+  name: aws
+  runtime: nodejs12.x
+  region: eu-west-1
+  stage: personal
+  endpointType: private
+  resourcePolicy:
+    - Effect: Deny
+      Principal: '*'
+      Action: execute-api:Invoke
+      Resource: "execute-api:/${self:provider.stage}/*/*"
+      Condition:
+        StringNotEquals:
+          aws:sourceVpce: ${cf:service-apig-${self:provider.stage}.PrivateVpce}
+    - Effect: Allow
+      Principal: '*'
+      Action: execute-api:Invoke
+      Resource: "execute-api:/${self:provider.stage}/*/*"
+  logs:
+    restApi: # Optional configuration which specifies if API Gateway logs are used. This can either be set to `true` to use defaults, or configured via subproperties.
+      accessLogging: true # Optional configuration which enables or disables access logging. Defaults to true.
+#      format: 'requestId: $context.requestId' # Optional configuration which specifies the log format to use for access logging.
+      executionLogging: true # Optional configuration which enables or disables execution logging. Defaults to true.
+      level: INFO # Optional configuration which specifies the log level to use for execution logging. May be set to either INFO or ERROR.
+functions:
+  getTest:
+    handler: functions/lambda-proxy.handler
+    events:
+      - http:
+          path: testGet
+          method: get
+      - http:
+          path: testPut
+          method: put
+  tester:
+    handler: functions/service-apig-tester.handler
+    vpc:
+      securityGroupIds:
+        - ${cf:service-apig-${self:provider.stage}.PrivateEndpointSG}
+      subnetIds:
+        - ${cf:service-apig-${self:provider.stage}.ServiceApiGPrivateSubnetA}
+    environment:
+      VPCE_DNS_NAME: vpce-0d3d37d485dbffa56-5fpnxfg2.execute-api.eu-west-1.vpce.amazonaws.com
+      API_GW_ENDPOINT:
+        Fn::Join:
+          - ''
+          - - Ref: ApiGatewayRestApi
+            - .execute-api.${self:provider.region}.amazonaws.com
+
+
+#sls invoke-local -f tester

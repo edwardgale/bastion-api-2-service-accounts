@@ -1,0 +1,38 @@
+privatedns.galesoftware.net
+_sceorektbyrwgazojvbw
+vpce:89D9FRULY19gW6BEIRIv
+
+
+v6m4xb0fd3.execute-api.eu-west-1.amazonaws.com
+vpce-0d3d37d485dbffa56-5fpnxfg2.execute-api.eu-west-1.vpce.amazonaws.com
+
+
+
+10.1.1.239 (vpce ip acc 2)
+
+
+10.2.1.174 (vpce ip acc 1)
+
+
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Principal": "*",
+            "Action": "execute-api:Invoke",
+            "Resource": "arn:aws:execute-api:eu-west-1:041033118510:v6m4xb0fd3/personal/*/*",
+            "Condition": {
+                "StringNotEquals": {
+                    "aws:sourceVpce": "vpce-0d3d37d485dbffa56"
+                }
+            }
+        },
+        {
+            "Effect": "Allow",
+            "Principal": "*",
+            "Action": "execute-api:Invoke",
+            "Resource": "arn:aws:execute-api:eu-west-1:041033118510:v6m4xb0fd3/personal/*/*"
+        }
+    ]
+}
