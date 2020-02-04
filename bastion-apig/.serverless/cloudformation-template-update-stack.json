@@ -59,7 +59,7 @@
     "TesterLogGroup": {
       "Type": "AWS::Logs::LogGroup",
       "Properties": {
-        "LogGroupName": "/aws/lambda/public-api-gateway-personal-tester"
+        "LogGroupName": "/aws/lambda/bastion-apig-personal-tester"
       }
     },
     "IamRoleLambdaExecution": {
@@ -88,7 +88,7 @@
                 "-",
                 [
                   "personal",
-                  "public-api-gateway",
+                  "bastion-apig",
                   "lambda"
                 ]
               ]
@@ -103,7 +103,7 @@
                   ],
                   "Resource": [
                     {
-                      "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/public-api-gateway-personal*:*"
+                      "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/bastion-apig-personal*:*"
                     }
                   ]
                 },
@@ -114,7 +114,7 @@
                   ],
                   "Resource": [
                     {
-                      "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/public-api-gateway-personal*:*:*"
+                      "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/bastion-apig-personal*:*:*"
                     }
                   ]
                 }
@@ -127,7 +127,7 @@
           "Fn::Join": [
             "-",
             [
-              "public-api-gateway",
+              "bastion-apig",
               "personal",
               {
                 "Ref": "AWS::Region"
@@ -159,9 +159,9 @@
           "S3Bucket": {
             "Ref": "ServerlessDeploymentBucket"
           },
-          "S3Key": "serverless/public-api-gateway/personal/1579869944253-2020-01-24T12:45:44.253Z/public-api-gateway.zip"
+          "S3Key": "serverless/bastion-apig/personal/1580769321614-2020-02-03T22:35:21.614Z/bastion-apig.zip"
         },
-        "FunctionName": "public-api-gateway-personal-tester",
+        "FunctionName": "bastion-apig-personal-tester",
         "Handler": "private-api-tester.handler",
         "MemorySize": 1024,
         "Role": {
@@ -190,10 +190,10 @@
         },
         "VpcConfig": {
           "SecurityGroupIds": [
-            "sg-03ec012eb9abaabd1"
+            "sg-0f60e44172814214c"
           ],
           "SubnetIds": [
-            "subnet-0ccef00f8b3d74d3e"
+            "subnet-08b46722d3c289a42"
           ]
         }
       },
@@ -202,7 +202,7 @@
         "IamRoleLambdaExecution"
       ]
     },
-    "TesterLambdaVersionrK0BqwzTt3yY0SfHdQiGGYpXgwIODdgsIArclO2g7E": {
+    "TesterLambdaVersionK1q2GuGhEdehJnMWGketo193YaASW1kQuClu1Mboig": {
       "Type": "AWS::Lambda::Version",
       "DeletionPolicy": "Retain",
       "Properties": {
@@ -221,10 +221,10 @@
             "REGIONAL"
           ]
         },
-        "Name": "public-api-gateway"
+        "Name": "bastion-apig"
       }
     },
-    "ApiGatewayResourceHello": {
+    "ApiGatewayResourceProxy": {
       "Type": "AWS::ApiGateway::Resource",
       "Properties": {
         "ParentId": {
@@ -233,7 +233,7 @@
             "RootResourceId"
           ]
         },
-        "PathPart": "hello",
+        "PathPart": "{proxy+}",
         "RestApiId": {
           "Ref": "ApiGatewayRestApi"
         }
@@ -246,14 +246,14 @@
         "AuthorizationType": "NONE",
         "HttpMethod": "GET",
         "Integration": {
-          "ConnectionId": "3l2pyn",
+          "ConnectionId": "vunnpf",
           "ConnectionType": "VPC_LINK",
           "IntegrationHttpMethod": "POST",
           "Type": "HTTP_PROXY",
           "Uri": "https://blah.com:443/blah"
         },
         "ResourceId": {
-          "Ref": "ApiGatewayResourceHello"
+          "Ref": "ApiGatewayResourceProxy"
         },
         "RestApiId": {
           "Ref": "ApiGatewayRestApi"
@@ -281,7 +281,7 @@
     "TesterLambdaFunctionQualifiedArn": {
       "Description": "Current Lambda function version",
       "Value": {
-        "Ref": "TesterLambdaVersionrK0BqwzTt3yY0SfHdQiGGYpXgwIODdgsIArclO2g7E"
+        "Ref": "TesterLambdaVersionK1q2GuGhEdehJnMWGketo193YaASW1kQuClu1Mboig"
       }
     }
   }

@@ -56,16 +56,22 @@
         }
       }
     },
-    "HelloWorldLogGroup": {
+    "GetTestLogGroup": {
       "Type": "AWS::Logs::LogGroup",
       "Properties": {
-        "LogGroupName": "/aws/lambda/private-endpoint-test-personal-helloWorld"
+        "LogGroupName": "/aws/lambda/service-apig-personal-getTest"
+      }
+    },
+    "PostTestLogGroup": {
+      "Type": "AWS::Logs::LogGroup",
+      "Properties": {
+        "LogGroupName": "/aws/lambda/service-apig-personal-postTest"
       }
     },
     "TesterLogGroup": {
       "Type": "AWS::Logs::LogGroup",
       "Properties": {
-        "LogGroupName": "/aws/lambda/private-endpoint-test-personal-tester"
+        "LogGroupName": "/aws/lambda/service-apig-personal-tester"
       }
     },
     "IamRoleLambdaExecution": {
@@ -94,7 +100,7 @@
                 "-",
                 [
                   "personal",
-                  "private-endpoint-test",
+                  "service-apig",
                   "lambda"
                 ]
               ]
@@ -109,7 +115,7 @@
                   ],
                   "Resource": [
                     {
-                      "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/private-endpoint-test-personal*:*"
+                      "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/service-apig-personal*:*"
                     }
                   ]
                 },
@@ -120,7 +126,7 @@
                   ],
                   "Resource": [
                     {
-                      "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/private-endpoint-test-personal*:*:*"
+                      "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/service-apig-personal*:*:*"
                     }
                   ]
                 }
@@ -133,7 +139,7 @@
           "Fn::Join": [
             "-",
             [
-              "private-endpoint-test",
+              "service-apig",
               "personal",
               {
                 "Ref": "AWS::Region"
@@ -158,16 +164,16 @@
         ]
       }
     },
-    "HelloWorldLambdaFunction": {
+    "GetTestLambdaFunction": {
       "Type": "AWS::Lambda::Function",
       "Properties": {
         "Code": {
           "S3Bucket": {
             "Ref": "ServerlessDeploymentBucket"
           },
-          "S3Key": "serverless/private-endpoint-test/personal/1580295464562-2020-01-29T10:57:44.562Z/private-endpoint-test.zip"
+          "S3Key": "serverless/service-apig/personal/1580764744123-2020-02-03T21:19:04.123Z/service-apig.zip"
         },
-        "FunctionName": "private-endpoint-test-personal-helloWorld",
+        "FunctionName": "service-apig-personal-getTest",
         "Handler": "functions/lambda-proxy.handler",
         "MemorySize": 1024,
         "Role": {
@@ -180,18 +186,54 @@
         "Timeout": 6
       },
       "DependsOn": [
-        "HelloWorldLogGroup",
+        "GetTestLogGroup",
         "IamRoleLambdaExecution"
       ]
     },
-    "HelloWorldLambdaVersionAB9yHaZC1V61Gcl3UTmztqtZBQnhaJC80W3wTivQ": {
+    "GetTestLambdaVersion0CGwcu5gVcbLbc9Aju6qrXP0cYsNRnz1qGQOnHNg": {
       "Type": "AWS::Lambda::Version",
       "DeletionPolicy": "Retain",
       "Properties": {
         "FunctionName": {
-          "Ref": "HelloWorldLambdaFunction"
+          "Ref": "GetTestLambdaFunction"
         },
-        "CodeSha256": "YS15UjeB0rSy6sAiSdaiwHDjZV1PGHHupYRzG9KYGFM="
+        "CodeSha256": "KkAe0+0ASKxe/lL08NK7+IhpCzwxy5BChEBCBKH8k+0="
+      }
+    },
+    "PostTestLambdaFunction": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Code": {
+          "S3Bucket": {
+            "Ref": "ServerlessDeploymentBucket"
+          },
+          "S3Key": "serverless/service-apig/personal/1580764744123-2020-02-03T21:19:04.123Z/service-apig.zip"
+        },
+        "FunctionName": "service-apig-personal-postTest",
+        "Handler": "functions/lambda-proxy.handler",
+        "MemorySize": 1024,
+        "Role": {
+          "Fn::GetAtt": [
+            "IamRoleLambdaExecution",
+            "Arn"
+          ]
+        },
+        "Runtime": "nodejs12.x",
+        "Timeout": 6
+      },
+      "DependsOn": [
+        "PostTestLogGroup",
+        "IamRoleLambdaExecution"
+      ]
+    },
+    "PostTestLambdaVersionRIhTJ6dA1XnJlFnFKx2nFlaw8tMn2iOPoLaQDeRsdEs": {
+      "Type": "AWS::Lambda::Version",
+      "DeletionPolicy": "Retain",
+      "Properties": {
+        "FunctionName": {
+          "Ref": "PostTestLambdaFunction"
+        },
+        "CodeSha256": "KkAe0+0ASKxe/lL08NK7+IhpCzwxy5BChEBCBKH8k+0="
       }
     },
     "TesterLambdaFunction": {
@@ -201,10 +243,10 @@
           "S3Bucket": {
             "Ref": "ServerlessDeploymentBucket"
           },
-          "S3Key": "serverless/private-endpoint-test/personal/1580295464562-2020-01-29T10:57:44.562Z/private-endpoint-test.zip"
+          "S3Key": "serverless/service-apig/personal/1580764744123-2020-02-03T21:19:04.123Z/service-apig.zip"
         },
-        "FunctionName": "private-endpoint-test-personal-tester",
-        "Handler": "functions/private-api-tester.handler",
+        "FunctionName": "service-apig-personal-tester",
+        "Handler": "functions/service-apig-tester.handler",
         "MemorySize": 1024,
         "Role": {
           "Fn::GetAtt": [
@@ -232,10 +274,10 @@
         },
         "VpcConfig": {
           "SecurityGroupIds": [
-            "sg-05007c9ce1c6a3882"
+            "sg-00f2fada1a176e6b2"
           ],
           "SubnetIds": [
-            "subnet-0f691df697dec4ad4"
+            "subnet-01efae7620b1cfd71"
           ]
         }
       },
@@ -244,20 +286,20 @@
         "IamRoleLambdaExecution"
       ]
     },
-    "TesterLambdaVersionVOhzsUnYgQmBmtRblFqcQtyKqHEO6OenpFETGnX4o": {
+    "TesterLambdaVersionaUDTA3YWyv7haMskOjn3TQ84ecz8FPou1vY4IwA04s": {
       "Type": "AWS::Lambda::Version",
       "DeletionPolicy": "Retain",
       "Properties": {
         "FunctionName": {
           "Ref": "TesterLambdaFunction"
         },
-        "CodeSha256": "YS15UjeB0rSy6sAiSdaiwHDjZV1PGHHupYRzG9KYGFM="
+        "CodeSha256": "KkAe0+0ASKxe/lL08NK7+IhpCzwxy5BChEBCBKH8k+0="
       }
     },
     "ApiGatewayRestApi": {
       "Type": "AWS::ApiGateway::RestApi",
       "Properties": {
-        "Name": "personal-private-endpoint-test",
+        "Name": "personal-service-apig",
         "EndpointConfiguration": {
           "Types": [
             "PRIVATE"
@@ -273,7 +315,7 @@
               "Resource": "execute-api:/personal/*/*",
               "Condition": {
                 "StringNotEquals": {
-                  "aws:sourceVpce": "vpce-0d3d37d485dbffa56"
+                  "aws:sourceVpce": "vpce-0dc56b1a066186af9"
                 }
               }
             },
@@ -287,7 +329,7 @@
         }
       }
     },
-    "ApiGatewayResourceHello": {
+    "ApiGatewayResourceTestget": {
       "Type": "AWS::ApiGateway::Resource",
       "Properties": {
         "ParentId": {
@@ -296,19 +338,34 @@
             "RootResourceId"
           ]
         },
-        "PathPart": "hello",
+        "PathPart": "testGet",
         "RestApiId": {
           "Ref": "ApiGatewayRestApi"
         }
       }
     },
-    "ApiGatewayMethodHelloGet": {
+    "ApiGatewayResourceTestpost": {
+      "Type": "AWS::ApiGateway::Resource",
+      "Properties": {
+        "ParentId": {
+          "Fn::GetAtt": [
+            "ApiGatewayRestApi",
+            "RootResourceId"
+          ]
+        },
+        "PathPart": "testPost",
+        "RestApiId": {
+          "Ref": "ApiGatewayRestApi"
+        }
+      }
+    },
+    "ApiGatewayMethodTestgetGet": {
       "Type": "AWS::ApiGateway::Method",
       "Properties": {
         "HttpMethod": "GET",
         "RequestParameters": {},
         "ResourceId": {
-          "Ref": "ApiGatewayResourceHello"
+          "Ref": "ApiGatewayResourceTestget"
         },
         "RestApiId": {
           "Ref": "ApiGatewayRestApi"
@@ -333,7 +390,7 @@
                 ":lambda:path/2015-03-31/functions/",
                 {
                   "Fn::GetAtt": [
-                    "HelloWorldLambdaFunction",
+                    "GetTestLambdaFunction",
                     "Arn"
                   ]
                 },
@@ -345,7 +402,50 @@
         "MethodResponses": []
       }
     },
-    "ApiGatewayDeployment1580295453522": {
+    "ApiGatewayMethodTestpostPost": {
+      "Type": "AWS::ApiGateway::Method",
+      "Properties": {
+        "HttpMethod": "POST",
+        "RequestParameters": {},
+        "ResourceId": {
+          "Ref": "ApiGatewayResourceTestpost"
+        },
+        "RestApiId": {
+          "Ref": "ApiGatewayRestApi"
+        },
+        "ApiKeyRequired": false,
+        "AuthorizationType": "NONE",
+        "Integration": {
+          "IntegrationHttpMethod": "POST",
+          "Type": "AWS_PROXY",
+          "Uri": {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition"
+                },
+                ":apigateway:",
+                {
+                  "Ref": "AWS::Region"
+                },
+                ":lambda:path/2015-03-31/functions/",
+                {
+                  "Fn::GetAtt": [
+                    "PostTestLambdaFunction",
+                    "Arn"
+                  ]
+                },
+                "/invocations"
+              ]
+            ]
+          }
+        },
+        "MethodResponses": []
+      }
+    },
+    "ApiGatewayDeployment1580764734588": {
       "Type": "AWS::ApiGateway::Deployment",
       "Properties": {
         "RestApiId": {
@@ -354,15 +454,53 @@
         "StageName": "personal"
       },
       "DependsOn": [
-        "ApiGatewayMethodHelloGet"
+        "ApiGatewayMethodTestgetGet",
+        "ApiGatewayMethodTestpostPost"
       ]
     },
-    "HelloWorldLambdaPermissionApiGateway": {
+    "GetTestLambdaPermissionApiGateway": {
       "Type": "AWS::Lambda::Permission",
       "Properties": {
         "FunctionName": {
           "Fn::GetAtt": [
-            "HelloWorldLambdaFunction",
+            "GetTestLambdaFunction",
+            "Arn"
+          ]
+        },
+        "Action": "lambda:InvokeFunction",
+        "Principal": "apigateway.amazonaws.com",
+        "SourceArn": {
+          "Fn::Join": [
+            "",
+            [
+              "arn:",
+              {
+                "Ref": "AWS::Partition"
+              },
+              ":execute-api:",
+              {
+                "Ref": "AWS::Region"
+              },
+              ":",
+              {
+                "Ref": "AWS::AccountId"
+              },
+              ":",
+              {
+                "Ref": "ApiGatewayRestApi"
+              },
+              "/*/*"
+            ]
+          ]
+        }
+      }
+    },
+    "PostTestLambdaPermissionApiGateway": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "FunctionName": {
+          "Fn::GetAtt": [
+            "PostTestLambdaFunction",
             "Arn"
           ]
         },
@@ -397,7 +535,7 @@
     "ApiGatewayLogGroup": {
       "Type": "AWS::Logs::LogGroup",
       "Properties": {
-        "LogGroupName": "/aws/api-gateway/private-endpoint-test-personal"
+        "LogGroupName": "/aws/api-gateway/service-apig-personal"
       }
     },
     "CustomApiGatewayAccountCloudWatchRole": {
@@ -438,7 +576,7 @@
                 "-",
                 [
                   "personal",
-                  "private-endpoint-test",
+                  "service-apig",
                   "custom-resources-lambda"
                 ]
               ]
@@ -488,9 +626,9 @@
           "S3Bucket": {
             "Ref": "ServerlessDeploymentBucket"
           },
-          "S3Key": "serverless/private-endpoint-test/personal/1580295464562-2020-01-29T10:57:44.562Z/custom-resources.zip"
+          "S3Key": "serverless/service-apig/personal/1580764744123-2020-02-03T21:19:04.123Z/custom-resources.zip"
         },
-        "FunctionName": "private-endpoint-test-personal-custom-resource-apigw-cw-role",
+        "FunctionName": "service-apig-personal-custom-resource-apigw-cw-role",
         "Handler": "apiGatewayCloudWatchRole/handler.handler",
         "MemorySize": 1024,
         "Runtime": "nodejs12.x",
@@ -513,16 +651,22 @@
         "Ref": "ServerlessDeploymentBucket"
       }
     },
-    "HelloWorldLambdaFunctionQualifiedArn": {
+    "GetTestLambdaFunctionQualifiedArn": {
       "Description": "Current Lambda function version",
       "Value": {
-        "Ref": "HelloWorldLambdaVersionAB9yHaZC1V61Gcl3UTmztqtZBQnhaJC80W3wTivQ"
+        "Ref": "GetTestLambdaVersion0CGwcu5gVcbLbc9Aju6qrXP0cYsNRnz1qGQOnHNg"
+      }
+    },
+    "PostTestLambdaFunctionQualifiedArn": {
+      "Description": "Current Lambda function version",
+      "Value": {
+        "Ref": "PostTestLambdaVersionRIhTJ6dA1XnJlFnFKx2nFlaw8tMn2iOPoLaQDeRsdEs"
       }
     },
     "TesterLambdaFunctionQualifiedArn": {
       "Description": "Current Lambda function version",
       "Value": {
-        "Ref": "TesterLambdaVersionVOhzsUnYgQmBmtRblFqcQtyKqHEO6OenpFETGnX4o"
+        "Ref": "TesterLambdaVersionaUDTA3YWyv7haMskOjn3TQ84ecz8FPou1vY4IwA04s"
       }
     },
     "ServiceEndpoint": {

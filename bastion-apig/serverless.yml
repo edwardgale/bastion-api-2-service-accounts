@@ -12,7 +12,7 @@ functions:
       securityGroupIds:
         - ${cf:bastion-vpc-${self:provider.stage}.PublicEndpointSG}
       subnetIds:
-        - ${cf:bastion-vpc-${self:provider.stage}.PublicPrivateSubnetA}
+        - ${cf:bastion-vpc-${self:provider.stage}.BastionPrivateSubnetA}
     environment:
 #      could also use the ip address of the eni here (it's what the nlb targets).
       VPCE_DNS_NAME: vpce-0af67ca1e362bc54f-5fpnxfg2.execute-api.eu-west-1.vpce.amazonaws.com
@@ -20,58 +20,48 @@ functions:
         Fn::Join:
           - ''
           - - Ref: ApiGatewayRestApi
-          - .execute-api.${self:provider.region}.amazonaws.com
-    - http:
-        path: v1/repository
-        method: any
-        integration: http-proxy
-        connectionType: vpc-link
-        connectionId: ${cf:bastion-vpc-${self:provider.stage}.PublicVpcLink}
-        cors: true
-        request:
-          uri: http://blah/{proxy}
-          method: any
+            - '.execute-api.${self:provider.region}.amazonaws.com'
 
 resources:
   Description: API using VPC Link
-#  Resources:
-#    ApiGatewayRestApi:
-#      Type: AWS::ApiGateway::RestApi
-#      Properties:
-#        Description: VPC Link Test
-#        EndpointConfiguration:
-#          Types:
-#            - REGIONAL
-#        Name: bastion-apig
-#
-#    ApiGatewayResourceProxy:
-#      Type: AWS::ApiGateway::Resource
-#      Properties:
-#        ParentId: !GetAtt ApiGatewayRestApi.RootResourceId
-#        PathPart: '{proxy+}'
-#        RestApiId: !Ref ApiGatewayRestApi
-#
-#    ApiGatewayMethodHelloGet:
-#      Type: AWS::ApiGateway::Method
-#      Properties:
-#        ApiKeyRequired: false
-#        AuthorizationType: NONE
-#        HttpMethod: GET
-#        Integration:
-#          ConnectionId: ${cf:bastion-vpc-${self:provider.stage}.PublicVpcLink}
-#          ConnectionType: VPC_LINK
-#          IntegrationHttpMethod: POST
-#          Type: HTTP_PROXY
-##          uri of the rest endpoint (+stage) sitting in service account.
-#          Uri: https://blah.com:443/blah
-#        ResourceId: !Ref ApiGatewayResourceHello
-#        RestApiId: !Ref ApiGatewayRestApi
-#
-#    ApiGatewayDeployment157688238695:
-#      Type: AWS::ApiGateway::Deployment
-#      DependsOn: ApiGatewayMethodHelloGet
-#      Properties:
-#        Description: Description of stage
-#        RestApiId: !Ref ApiGatewayRestApi
-#        StageName: ${self:provider.stage}
+  Resources:
+    ApiGatewayRestApi:
+      Type: AWS::ApiGateway::RestApi
+      Properties:
+        Description: VPC Link Test
+        EndpointConfiguration:
+          Types:
+            - REGIONAL
+        Name: bastion-apig
+
+    ApiGatewayResourceProxy:
+      Type: AWS::ApiGateway::Resource
+      Properties:
+        ParentId: !GetAtt ApiGatewayRestApi.RootResourceId
+        PathPart: '{proxy+}'
+        RestApiId: !Ref ApiGatewayRestApi
+
+    ApiGatewayMethodHelloGet:
+      Type: AWS::ApiGateway::Method
+      Properties:
+        ApiKeyRequired: false
+        AuthorizationType: NONE
+        HttpMethod: GET
+        Integration:
+          ConnectionId: ${cf:bastion-vpc-${self:provider.stage}.BastionVpcLink}
+          ConnectionType: VPC_LINK
+          IntegrationHttpMethod: POST
+          Type: HTTP_PROXY
+#          uri of the rest endpoint (+stage) sitting in service account.
+          Uri: https://blah.com:443/blah
+        ResourceId: !Ref ApiGatewayResourceProxy
+        RestApiId: !Ref ApiGatewayRestApi
+
+    ApiGatewayDeployment157688238695:
+      Type: AWS::ApiGateway::Deployment
+      DependsOn: ApiGatewayMethodHelloGet
+      Properties:
+        Description: Description of stage
+        RestApiId: !Ref ApiGatewayRestApi
+        StageName: ${self:provider.stage}
 

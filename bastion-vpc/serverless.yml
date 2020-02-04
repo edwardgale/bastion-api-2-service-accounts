@@ -8,7 +8,7 @@ provider:
   region: ${self:custom.standardVars.region, 'eu-west-1'}
 
 resources:
-  Description: VPC creation for Public API VPC
+  Description: VPC creation for Bastion API VPC
   Resources:
     VPC:
       Type: AWS::EC2::VPC
@@ -22,7 +22,6 @@ resources:
             Fn::Join:
             - ''
             - - Ref: AWS::StackName
-              - -vpc-private-api
 
     PrivateRouteTable:
       Type: AWS::EC2::RouteTable
@@ -39,12 +38,12 @@ resources:
         NetworkInterfaceId: !Select
           - 0
           - !GetAtt VPCE.NetworkInterfaceIds
-    PrivateRoute2:   # Public route table has direct routing to IGW:
-      Type: AWS::EC2::Route
-      Properties:
-        RouteTableId: !Ref PrivateRouteTable
-        DestinationCidrBlock: 10.1.1.239/32
-        VpcPeeringConnectionId: !Ref VpcPeeringConnection
+#    PrivateRoute2:   # Public route table has direct routing to IGW:
+#      Type: AWS::EC2::Route
+#      Properties:
+#        RouteTableId: !Ref PrivateRouteTable
+#        DestinationCidrBlock: 10.1.1.239/32
+#        VpcPeeringConnectionId: !Ref VpcPeeringConnection
     PrivateSubnetARouteTableAssociation:
       Type: AWS::EC2::SubnetRouteTableAssociation
       Properties:
@@ -66,7 +65,7 @@ resources:
               Fn::Join:
                 - ''
                 - - Ref: AWS::StackName
-                  - -Private-A
+                  - -PrivateSubnet1A
     NLB:
       Type: AWS::ElasticLoadBalancingV2::LoadBalancer
       Properties:
@@ -75,6 +74,29 @@ resources:
         Subnets:
           - !Ref PrivateSubnetA
         Type: network
+    MyTargetGroup:
+      Type: AWS::ElasticLoadBalancingV2::TargetGroup
+      Properties:
+        HealthCheckEnabled: true
+        Name: MyTargets
+        Port: 80
+        Protocol: TCP
+        TargetType: ip
+        Targets:
+          - Id: 10.2.1.10
+            Port: 443
+            AvailabilityZone: eu-west-1a
+        VpcId: !Ref VPC
+
+    MyL:
+      Type: AWS::ElasticLoadBalancingV2::Listener
+      Properties:
+        DefaultActions:
+          - Action
+        LoadBalancerArn: String
+        Port: Integer
+        Protocol: String
+        SslPolicy: String
 
     VpcLink:
       Type: AWS::ApiGateway::VpcLink
@@ -104,7 +126,11 @@ resources:
             CidrIp: '0.0.0.0/0'
         Tags:
           - Key: Name
-            Value: EndpointSG
+            Value:
+              Fn::Join:
+                - ''
+                - - Ref: AWS::StackName
+                  - -SG
 
     VPCE:
       Type: AWS::EC2::VPCEndpoint
@@ -118,13 +144,13 @@ resources:
         VpcEndpointType: Interface
         VpcId: !Ref VPC
 
-    VpcPeeringConnection:
-      Type: 'AWS::EC2::VPCPeeringConnection'
-      Properties:
-        VpcId: !Ref VPC
-        PeerVpcId: vpc-0bc48c6d941da25a0
-        PeerOwnerId: '041033118510'
-        PeerRoleArn: arn:aws:iam::041033118510:role/service-apig-personal-PeerRole-LO4ZF3VRY4BX
+#    VpcPeeringConnection:
+#      Type: 'AWS::EC2::VPCPeeringConnection'
+#      Properties:
+#        VpcId: !Ref VPC
+#        PeerVpcId: vpc-0bc48c6d941da25a0
+#        PeerOwnerId: '041033118510'
+#        PeerRoleArn: arn:aws:iam::041033118510:role/service-apig-personal-PeerRole-LO4ZF3VRY4BX
 
 # Instance stuff
 #    public basttion
@@ -258,27 +284,27 @@ resources:
       Export:
         Name: PublicVPC
 
-    PublicPrivateSubnetA:
+    BastionPrivateSubnetA:
       Value: !Ref PrivateSubnetA
       Description: Private Subnet in AZ 1
       Export:
-        Name: PublicPrivateSubnetA
-    PublicVpcLink:
+        Name: BastionPrivateSubnetA
+    BastionVpcLink:
       Value: !Ref VpcLink
       Description: VPC Link
       Export:
-        Name: PublicVpcLink
+        Name: BastionVpcLink
     PublicEndpointSG:
       Value: !Ref 'EndpointSG'
       Description: SG for API Gateway Private endpoint
       Export:
         Name: PublicEndpointSG
-    PublicVpce:
+    BastionVpce:
       Value: !Ref 'VPCE'
       Description: VPC endpoint
       Export:
-        Name: PublicVpce
-    PublicVpceDNS:
+        Name: BastionVpce
+    BastionVpceDNS:
       Value:
         Fn::Join:
           - ','
@@ -287,8 +313,8 @@ resources:
             - NetworkInterfaceIds
       Description: Network interfaces
       Export:
-        Name: PublicVpceDNS
-    VpcPeeringConnectionId:
-      Value: !Ref VpcPeeringConnection
-      Export:
-        Name: VpcPeeringConnectionId
+        Name: BastionVpceDNS
+#    VpcPeeringConnectionId:
+#      Value: !Ref VpcPeeringConnection
+#      Export:
+#        Name: VpcPeeringConnectionId

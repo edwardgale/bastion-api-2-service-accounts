@@ -1,8 +1,8 @@
 {
   "service": {
-    "service": "public-vpc-api",
+    "service": "bastion-vpc",
     "serviceObject": {
-      "name": "public-vpc-api"
+      "name": "bastion-vpc"
     },
     "provider": {
       "stage": "personal",
@@ -14,7 +14,7 @@
       "remoteFunctionData": null,
       "compiledCloudFormationTemplate": {
         "AWSTemplateFormatVersion": "2010-09-09",
-        "Description": "VPC creation for Public API VPC",
+        "Description": "VPC creation for Bastion API VPC",
         "Resources": {
           "ServerlessDeploymentBucket": {
             "Type": "AWS::S3::Bucket",
@@ -85,8 +85,7 @@
                       [
                         {
                           "Ref": "AWS::StackName"
-                        },
-                        "-vpc-private-api"
+                        }
                       ]
                     ]
                   }
@@ -128,18 +127,6 @@
               }
             }
           },
-          "PrivateRoute2": {
-            "Type": "AWS::EC2::Route",
-            "Properties": {
-              "RouteTableId": {
-                "Ref": "PrivateRouteTable"
-              },
-              "DestinationCidrBlock": "10.1.1.239/32",
-              "VpcPeeringConnectionId": {
-                "Ref": "VpcPeeringConnection"
-              }
-            }
-          },
           "PrivateSubnetARouteTableAssociation": {
             "Type": "AWS::EC2::SubnetRouteTableAssociation",
             "Properties": {
@@ -178,7 +165,7 @@
                         {
                           "Ref": "AWS::StackName"
                         },
-                        "-Private-A"
+                        "-PrivateSubnet1A"
                       ]
                     ]
                   }
@@ -197,6 +184,26 @@
                 }
               ],
               "Type": "network"
+            }
+          },
+          "MyTargetGroup": {
+            "Type": "AWS::ElasticLoadBalancingV2::TargetGroup",
+            "Properties": {
+              "HealthCheckEnabled": true,
+              "Name": "MyTargets",
+              "Port": 443,
+              "Protocol": "TCP",
+              "TargetType": "ip",
+              "Targets": [
+                {
+                  "Id": "10.2.1.10",
+                  "Port": 443,
+                  "AvailabilityZone": "eu-west-1a"
+                }
+              ],
+              "VpcId": {
+                "Ref": "VPC"
+              }
             }
           },
           "VpcLink": {
@@ -247,7 +254,17 @@
               "Tags": [
                 {
                   "Key": "Name",
-                  "Value": "EndpointSG"
+                  "Value": {
+                    "Fn::Join": [
+                      "",
+                      [
+                        {
+                          "Ref": "AWS::StackName"
+                        },
+                        "-SG"
+                      ]
+                    ]
+                  }
                 }
               ]
             }
@@ -272,237 +289,6 @@
                 "Ref": "VPC"
               }
             }
-          },
-          "VpcPeeringConnection": {
-            "Type": "AWS::EC2::VPCPeeringConnection",
-            "Properties": {
-              "VpcId": {
-                "Ref": "VPC"
-              },
-              "PeerVpcId": "vpc-0bc48c6d941da25a0",
-              "PeerOwnerId": "041033118510",
-              "PeerRoleArn": "arn:aws:iam::041033118510:role/service-apig-personal-PeerRole-LO4ZF3VRY4BX"
-            }
-          },
-          "PublicSubnetA": {
-            "Type": "AWS::EC2::Subnet",
-            "Properties": {
-              "VpcId": {
-                "Ref": "VPC"
-              },
-              "CidrBlock": "10.2.0.0/24",
-              "AvailabilityZone": {
-                "Fn::Select": [
-                  0,
-                  {
-                    "Fn::GetAZs": {
-                      "Ref": "AWS::Region"
-                    }
-                  }
-                ]
-              },
-              "Tags": [
-                {
-                  "Key": "Name",
-                  "Value": {
-                    "Fn::Join": [
-                      "",
-                      [
-                        {
-                          "Ref": "AWS::StackName"
-                        },
-                        "-Public-A"
-                      ]
-                    ]
-                  }
-                }
-              ]
-            }
-          },
-          "PublicSubnetARouteTableAssociation": {
-            "Type": "AWS::EC2::SubnetRouteTableAssociation",
-            "Properties": {
-              "SubnetId": {
-                "Ref": "PublicSubnetA"
-              },
-              "RouteTableId": {
-                "Ref": "PublicRouteTable"
-              }
-            }
-          },
-          "InternetGateway": {
-            "Type": "AWS::EC2::InternetGateway",
-            "DependsOn": "VPC"
-          },
-          "AttachGateway": {
-            "Type": "AWS::EC2::VPCGatewayAttachment",
-            "Properties": {
-              "VpcId": {
-                "Ref": "VPC"
-              },
-              "InternetGatewayId": {
-                "Ref": "InternetGateway"
-              }
-            }
-          },
-          "PublicRouteTable": {
-            "Type": "AWS::EC2::RouteTable",
-            "Properties": {
-              "VpcId": {
-                "Ref": "VPC"
-              },
-              "Tags": [
-                {
-                  "Key": "Name",
-                  "Value": "Public"
-                }
-              ]
-            }
-          },
-          "PublicRoute1": {
-            "Type": "AWS::EC2::Route",
-            "DependsOn": "AttachGateway",
-            "Properties": {
-              "RouteTableId": {
-                "Ref": "PublicRouteTable"
-              },
-              "DestinationCidrBlock": "0.0.0.0/0",
-              "GatewayId": {
-                "Ref": "InternetGateway"
-              }
-            }
-          },
-          "WebSecurityGroup": {
-            "Type": "AWS::EC2::SecurityGroup",
-            "Properties": {
-              "VpcId": {
-                "Ref": "VPC"
-              },
-              "GroupDescription": "Enable HTTP access via user defined port",
-              "SecurityGroupIngress": [
-                {
-                  "CidrIp": "0.0.0.0/0",
-                  "FromPort": 22,
-                  "IpProtocol": "tcp",
-                  "ToPort": 22
-                }
-              ],
-              "Tags": [
-                {
-                  "Key": "Name",
-                  "Value": {
-                    "Fn::Join": [
-                      "",
-                      [
-                        {
-                          "Ref": "AWS::StackName"
-                        },
-                        "-ec2-sg-endpoint"
-                      ]
-                    ]
-                  }
-                }
-              ]
-            }
-          },
-          "InstanceRole": {
-            "Type": "AWS::IAM::Role",
-            "Properties": {
-              "RoleName": {
-                "Fn::Join": [
-                  "",
-                  [
-                    {
-                      "Ref": "AWS::StackName"
-                    },
-                    "-ec2-role"
-                  ]
-                ]
-              },
-              "AssumeRolePolicyDocument": {
-                "Version": "2012-10-17",
-                "Statement": [
-                  {
-                    "Effect": "Allow",
-                    "Principal": {
-                      "Service": [
-                        "ec2.amazonaws.com"
-                      ]
-                    },
-                    "Action": [
-                      "sts:AssumeRole"
-                    ]
-                  }
-                ]
-              },
-              "Path": "/",
-              "Policies": [
-                {
-                  "PolicyName": "instance",
-                  "PolicyDocument": {
-                    "Version": "2012-10-17",
-                    "Statement": [
-                      {
-                        "Effect": "Allow",
-                        "Action": "ec2:DescribeNetworkInterfaces",
-                        "Resource": "*"
-                      },
-                      {
-                        "Effect": "Allow",
-                        "Action": "ec2:DescribeNetworkInterfaceAttribute",
-                        "Resource": "*"
-                      }
-                    ]
-                  }
-                }
-              ]
-            }
-          },
-          "InstanceProfile": {
-            "Type": "AWS::IAM::InstanceProfile",
-            "Properties": {
-              "Path": "/",
-              "Roles": [
-                {
-                  "Ref": "InstanceRole"
-                }
-              ]
-            }
-          },
-          "WebInstance": {
-            "Type": "AWS::EC2::Instance",
-            "Properties": {
-              "InstanceType": "t2.micro",
-              "ImageId": "ami-07683a44e80cd32c5",
-              "KeyName": "public-api-ec2",
-              "SecurityGroupIds": [
-                {
-                  "Ref": "WebSecurityGroup"
-                }
-              ],
-              "SubnetId": {
-                "Ref": "PrivateSubnetA"
-              },
-              "IamInstanceProfile": {
-                "Ref": "InstanceProfile"
-              },
-              "Tags": [
-                {
-                  "Key": "Name",
-                  "Value": {
-                    "Fn::Join": [
-                      "",
-                      [
-                        {
-                          "Ref": "AWS::StackName"
-                        },
-                        "-ec2-instance"
-                      ]
-                    ]
-                  }
-                }
-              ]
-            }
           }
         },
         "Outputs": {
@@ -520,22 +306,22 @@
               "Name": "PublicVPC"
             }
           },
-          "PublicPrivateSubnetA": {
+          "BastionPrivateSubnetA": {
             "Value": {
               "Ref": "PrivateSubnetA"
             },
             "Description": "Private Subnet in AZ 1",
             "Export": {
-              "Name": "PublicPrivateSubnetA"
+              "Name": "BastionPrivateSubnetA"
             }
           },
-          "PublicVpcLink": {
+          "BastionVpcLink": {
             "Value": {
               "Ref": "VpcLink"
             },
             "Description": "VPC Link",
             "Export": {
-              "Name": "PublicVpcLink"
+              "Name": "BastionVpcLink"
             }
           },
           "PublicEndpointSG": {
@@ -547,16 +333,16 @@
               "Name": "PublicEndpointSG"
             }
           },
-          "PublicVpce": {
+          "BastionVpce": {
             "Value": {
               "Ref": "VPCE"
             },
             "Description": "VPC endpoint",
             "Export": {
-              "Name": "PublicVpce"
+              "Name": "BastionVpce"
             }
           },
-          "PublicVpceDNS": {
+          "BastionVpceDNS": {
             "Value": {
               "Fn::Join": [
                 ",",
@@ -570,15 +356,7 @@
             },
             "Description": "Network interfaces",
             "Export": {
-              "Name": "PublicVpceDNS"
-            }
-          },
-          "VpcPeeringConnectionId": {
-            "Value": {
-              "Ref": "VpcPeeringConnection"
-            },
-            "Export": {
-              "Name": "VpcPeeringConnectionId"
+              "Name": "BastionVpceDNS"
             }
           }
         }
@@ -654,7 +432,7 @@
     "pluginsData": {},
     "functions": {},
     "resources": {
-      "Description": "VPC creation for Public API VPC",
+      "Description": "VPC creation for Bastion API VPC",
       "Resources": {
         "VPC": {
           "Type": "AWS::EC2::VPC",
@@ -671,8 +449,7 @@
                     [
                       {
                         "Ref": "AWS::StackName"
-                      },
-                      "-vpc-private-api"
+                      }
                     ]
                   ]
                 }
@@ -714,18 +491,6 @@
             }
           }
         },
-        "PrivateRoute2": {
-          "Type": "AWS::EC2::Route",
-          "Properties": {
-            "RouteTableId": {
-              "Ref": "PrivateRouteTable"
-            },
-            "DestinationCidrBlock": "10.1.1.239/32",
-            "VpcPeeringConnectionId": {
-              "Ref": "VpcPeeringConnection"
-            }
-          }
-        },
         "PrivateSubnetARouteTableAssociation": {
           "Type": "AWS::EC2::SubnetRouteTableAssociation",
           "Properties": {
@@ -764,7 +529,7 @@
                       {
                         "Ref": "AWS::StackName"
                       },
-                      "-Private-A"
+                      "-PrivateSubnet1A"
                     ]
                   ]
                 }
@@ -783,6 +548,26 @@
               }
             ],
             "Type": "network"
+          }
+        },
+        "MyTargetGroup": {
+          "Type": "AWS::ElasticLoadBalancingV2::TargetGroup",
+          "Properties": {
+            "HealthCheckEnabled": true,
+            "Name": "MyTargets",
+            "Port": 443,
+            "Protocol": "TCP",
+            "TargetType": "ip",
+            "Targets": [
+              {
+                "Id": "10.2.1.10",
+                "Port": 443,
+                "AvailabilityZone": "eu-west-1a"
+              }
+            ],
+            "VpcId": {
+              "Ref": "VPC"
+            }
           }
         },
         "VpcLink": {
@@ -833,7 +618,17 @@
             "Tags": [
               {
                 "Key": "Name",
-                "Value": "EndpointSG"
+                "Value": {
+                  "Fn::Join": [
+                    "",
+                    [
+                      {
+                        "Ref": "AWS::StackName"
+                      },
+                      "-SG"
+                    ]
+                  ]
+                }
               }
             ]
           }
@@ -858,237 +653,6 @@
               "Ref": "VPC"
             }
           }
-        },
-        "VpcPeeringConnection": {
-          "Type": "AWS::EC2::VPCPeeringConnection",
-          "Properties": {
-            "VpcId": {
-              "Ref": "VPC"
-            },
-            "PeerVpcId": "vpc-0bc48c6d941da25a0",
-            "PeerOwnerId": "041033118510",
-            "PeerRoleArn": "arn:aws:iam::041033118510:role/service-apig-personal-PeerRole-LO4ZF3VRY4BX"
-          }
-        },
-        "PublicSubnetA": {
-          "Type": "AWS::EC2::Subnet",
-          "Properties": {
-            "VpcId": {
-              "Ref": "VPC"
-            },
-            "CidrBlock": "10.2.0.0/24",
-            "AvailabilityZone": {
-              "Fn::Select": [
-                0,
-                {
-                  "Fn::GetAZs": {
-                    "Ref": "AWS::Region"
-                  }
-                }
-              ]
-            },
-            "Tags": [
-              {
-                "Key": "Name",
-                "Value": {
-                  "Fn::Join": [
-                    "",
-                    [
-                      {
-                        "Ref": "AWS::StackName"
-                      },
-                      "-Public-A"
-                    ]
-                  ]
-                }
-              }
-            ]
-          }
-        },
-        "PublicSubnetARouteTableAssociation": {
-          "Type": "AWS::EC2::SubnetRouteTableAssociation",
-          "Properties": {
-            "SubnetId": {
-              "Ref": "PublicSubnetA"
-            },
-            "RouteTableId": {
-              "Ref": "PublicRouteTable"
-            }
-          }
-        },
-        "InternetGateway": {
-          "Type": "AWS::EC2::InternetGateway",
-          "DependsOn": "VPC"
-        },
-        "AttachGateway": {
-          "Type": "AWS::EC2::VPCGatewayAttachment",
-          "Properties": {
-            "VpcId": {
-              "Ref": "VPC"
-            },
-            "InternetGatewayId": {
-              "Ref": "InternetGateway"
-            }
-          }
-        },
-        "PublicRouteTable": {
-          "Type": "AWS::EC2::RouteTable",
-          "Properties": {
-            "VpcId": {
-              "Ref": "VPC"
-            },
-            "Tags": [
-              {
-                "Key": "Name",
-                "Value": "Public"
-              }
-            ]
-          }
-        },
-        "PublicRoute1": {
-          "Type": "AWS::EC2::Route",
-          "DependsOn": "AttachGateway",
-          "Properties": {
-            "RouteTableId": {
-              "Ref": "PublicRouteTable"
-            },
-            "DestinationCidrBlock": "0.0.0.0/0",
-            "GatewayId": {
-              "Ref": "InternetGateway"
-            }
-          }
-        },
-        "WebSecurityGroup": {
-          "Type": "AWS::EC2::SecurityGroup",
-          "Properties": {
-            "VpcId": {
-              "Ref": "VPC"
-            },
-            "GroupDescription": "Enable HTTP access via user defined port",
-            "SecurityGroupIngress": [
-              {
-                "CidrIp": "0.0.0.0/0",
-                "FromPort": 22,
-                "IpProtocol": "tcp",
-                "ToPort": 22
-              }
-            ],
-            "Tags": [
-              {
-                "Key": "Name",
-                "Value": {
-                  "Fn::Join": [
-                    "",
-                    [
-                      {
-                        "Ref": "AWS::StackName"
-                      },
-                      "-ec2-sg-endpoint"
-                    ]
-                  ]
-                }
-              }
-            ]
-          }
-        },
-        "InstanceRole": {
-          "Type": "AWS::IAM::Role",
-          "Properties": {
-            "RoleName": {
-              "Fn::Join": [
-                "",
-                [
-                  {
-                    "Ref": "AWS::StackName"
-                  },
-                  "-ec2-role"
-                ]
-              ]
-            },
-            "AssumeRolePolicyDocument": {
-              "Version": "2012-10-17",
-              "Statement": [
-                {
-                  "Effect": "Allow",
-                  "Principal": {
-                    "Service": [
-                      "ec2.amazonaws.com"
-                    ]
-                  },
-                  "Action": [
-                    "sts:AssumeRole"
-                  ]
-                }
-              ]
-            },
-            "Path": "/",
-            "Policies": [
-              {
-                "PolicyName": "instance",
-                "PolicyDocument": {
-                  "Version": "2012-10-17",
-                  "Statement": [
-                    {
-                      "Effect": "Allow",
-                      "Action": "ec2:DescribeNetworkInterfaces",
-                      "Resource": "*"
-                    },
-                    {
-                      "Effect": "Allow",
-                      "Action": "ec2:DescribeNetworkInterfaceAttribute",
-                      "Resource": "*"
-                    }
-                  ]
-                }
-              }
-            ]
-          }
-        },
-        "InstanceProfile": {
-          "Type": "AWS::IAM::InstanceProfile",
-          "Properties": {
-            "Path": "/",
-            "Roles": [
-              {
-                "Ref": "InstanceRole"
-              }
-            ]
-          }
-        },
-        "WebInstance": {
-          "Type": "AWS::EC2::Instance",
-          "Properties": {
-            "InstanceType": "t2.micro",
-            "ImageId": "ami-07683a44e80cd32c5",
-            "KeyName": "public-api-ec2",
-            "SecurityGroupIds": [
-              {
-                "Ref": "WebSecurityGroup"
-              }
-            ],
-            "SubnetId": {
-              "Ref": "PrivateSubnetA"
-            },
-            "IamInstanceProfile": {
-              "Ref": "InstanceProfile"
-            },
-            "Tags": [
-              {
-                "Key": "Name",
-                "Value": {
-                  "Fn::Join": [
-                    "",
-                    [
-                      {
-                        "Ref": "AWS::StackName"
-                      },
-                      "-ec2-instance"
-                    ]
-                  ]
-                }
-              }
-            ]
-          }
         }
       },
       "Outputs": {
@@ -1101,22 +665,22 @@
             "Name": "PublicVPC"
           }
         },
-        "PublicPrivateSubnetA": {
+        "BastionPrivateSubnetA": {
           "Value": {
             "Ref": "PrivateSubnetA"
           },
           "Description": "Private Subnet in AZ 1",
           "Export": {
-            "Name": "PublicPrivateSubnetA"
+            "Name": "BastionPrivateSubnetA"
           }
         },
-        "PublicVpcLink": {
+        "BastionVpcLink": {
           "Value": {
             "Ref": "VpcLink"
           },
           "Description": "VPC Link",
           "Export": {
-            "Name": "PublicVpcLink"
+            "Name": "BastionVpcLink"
           }
         },
         "PublicEndpointSG": {
@@ -1128,16 +692,16 @@
             "Name": "PublicEndpointSG"
           }
         },
-        "PublicVpce": {
+        "BastionVpce": {
           "Value": {
             "Ref": "VPCE"
           },
           "Description": "VPC endpoint",
           "Export": {
-            "Name": "PublicVpce"
+            "Name": "BastionVpce"
           }
         },
-        "PublicVpceDNS": {
+        "BastionVpceDNS": {
           "Value": {
             "Fn::Join": [
               ",",
@@ -1151,15 +715,7 @@
           },
           "Description": "Network interfaces",
           "Export": {
-            "Name": "PublicVpceDNS"
-          }
-        },
-        "VpcPeeringConnectionId": {
-          "Value": {
-            "Ref": "VpcPeeringConnection"
-          },
-          "Export": {
-            "Name": "VpcPeeringConnectionId"
+            "Name": "BastionVpceDNS"
           }
         }
       }
@@ -1168,7 +724,7 @@
     "layers": {}
   },
   "package": {
-    "artifactDirectoryName": "serverless/public-vpc-api/personal/1580247953586-2020-01-28T21:45:53.586Z",
+    "artifactDirectoryName": "serverless/bastion-vpc/personal/1580773545305-2020-02-03T23:45:45.305Z",
     "artifact": ""
   }
 }

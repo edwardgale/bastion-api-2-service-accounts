@@ -12,7 +12,7 @@ provider:
       Resource: "execute-api:/${self:provider.stage}/*/*"
       Condition:
         StringNotEquals:
-          aws:sourceVpce: ${cf:service-apig-${self:provider.stage}.PrivateVpce}
+          aws:sourceVpce: ${cf:service-vpc-${self:provider.stage}.PrivateVpce}
     - Effect: Allow
       Principal: '*'
       Action: execute-api:Invoke
@@ -30,16 +30,19 @@ functions:
       - http:
           path: testGet
           method: get
+  postTest:
+    handler: functions/lambda-proxy.handler
+    events:
       - http:
-          path: testPut
-          method: put
+          path: testPost
+          method: post
   tester:
     handler: functions/service-apig-tester.handler
     vpc:
       securityGroupIds:
-        - ${cf:service-apig-${self:provider.stage}.PrivateEndpointSG}
+        - ${cf:service-vpc-${self:provider.stage}.PrivateEndpointSG}
       subnetIds:
-        - ${cf:service-apig-${self:provider.stage}.ServiceApiGPrivateSubnetA}
+        - ${cf:service-vpc-${self:provider.stage}.ServiceApiGPrivateSubnetA}
     environment:
       VPCE_DNS_NAME: vpce-0d3d37d485dbffa56-5fpnxfg2.execute-api.eu-west-1.vpce.amazonaws.com
       API_GW_ENDPOINT:
