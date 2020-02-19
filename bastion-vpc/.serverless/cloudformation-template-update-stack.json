@@ -172,12 +172,12 @@
         "Type": "network"
       }
     },
-    "MyTargetGroup": {
+    "ApiEndpointTargetGroup": {
       "Type": "AWS::ElasticLoadBalancingV2::TargetGroup",
       "Properties": {
         "HealthCheckEnabled": true,
-        "Name": "MyTargets",
-        "Port": 443,
+        "Name": "Bastion-vpc",
+        "Port": 80,
         "Protocol": "TCP",
         "TargetType": "ip",
         "Targets": [
@@ -190,6 +190,24 @@
         "VpcId": {
           "Ref": "VPC"
         }
+      }
+    },
+    "NLBListener": {
+      "Type": "AWS::ElasticLoadBalancingV2::Listener",
+      "Properties": {
+        "DefaultActions": [
+          {
+            "Type": "forward",
+            "TargetGroupArn": {
+              "Ref": "ApiEndpointTargetGroup"
+            }
+          }
+        ],
+        "LoadBalancerArn": {
+          "Ref": "NLB"
+        },
+        "Port": 443,
+        "Protocol": "TCP"
       }
     },
     "VpcLink": {
@@ -273,6 +291,99 @@
         "VpcEndpointType": "Interface",
         "VpcId": {
           "Ref": "VPC"
+        }
+      }
+    },
+    "VpceIpResolverLambda": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Code": {
+          "ZipFile": "const AWS = require('aws-sdk'); const response = require('cfn-response'); exports.handler = async function(event, context) {\n  console.log(event);\n  console.log(JSON.stringify(event));\n  if (event.RequestType === 'Delete') {\n    response.send(event, context, response.SUCCESS);\n    return;\n  }\n  var input = parseInt(event.ResourceProperties.Input);\n  var responseData = {Value: input * 5};\n  const ec2 = new AWS.EC2({apiVersion: '2016-11-15'});\n  const vpce = await  ec2.describeVpcEndpoints({VpcEndpointIds: [event.ResourceProperties.VpceRef]}).promise();\n  console.log(vpce.VpcEndpoints[0].NetworkInterfaceIds);\n  const enis = vpce.VpcEndpoints[0].NetworkInterfaceIds;\n  const networkInterfaces = await ec2.describeNetworkInterfaces({NetworkInterfaceIds: enis}).promise();\n  console.log(JSON.stringify(networkInterfaces));\n  const ips = networkInterfaces.map(interface => interface.PrivateIpAddress);\n  console.log(ips);\n\n  console.log(event.ResourceProperties.VpceRef);\n  console.log(vpce);\n  response.send(event, context, response.SUCCESS, responseData);\n};\n"
+        },
+        "Handler": "index.handler",
+        "Runtime": "nodejs12.x",
+        "Timeout": 30,
+        "Role": {
+          "Fn::GetAtt": [
+            "LambdaExecutionRole",
+            "Arn"
+          ]
+        },
+        "FunctionName": "bastion-vpc-lambda-eni-resolver"
+      }
+    },
+    "LambdaExecutionRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": [
+                  "lambda.amazonaws.com"
+                ]
+              },
+              "Action": [
+                "sts:AssumeRole"
+              ]
+            }
+          ]
+        },
+        "Path": "/",
+        "Policies": [
+          {
+            "PolicyName": "root",
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "logs:CreateLogGroup",
+                    "logs:CreateLogStream",
+                    "logs:PutLogEvents"
+                  ],
+                  "Resource": "arn:aws:logs:*:*:*"
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "ec2:DescribeVpcEndpoints",
+                    "ec2:describeNetworkInterfaces"
+                  ],
+                  "Resource": "*"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "VpceIpResolver": {
+      "Type": "Custom::VpceIpResolver",
+      "Properties": {
+        "ServiceToken": {
+          "Fn::GetAtt": [
+            "VpceIpResolverLambda",
+            "Arn"
+          ]
+        },
+        "VpceRef": {
+          "Ref": "VPCE"
+        },
+        "VpceRef1": {
+          "Ref": "VPCE"
+        },
+        "TargetGroupRef": {
+          "Ref": "ApiEndpointTargetGroup"
+        },
+        "FunctionName": {
+          "Fn::GetAtt": [
+            "VpceIpResolverLambda",
+            "Arn"
+          ]
         }
       }
     }

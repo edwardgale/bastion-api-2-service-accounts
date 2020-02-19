@@ -4,7 +4,7 @@ service: bastion-vpc
 provider:
   name: aws
   runtime: nodejs12.x
-  stage: ${opt:stage, 'personal'}
+  stage: ${opt:stage, 'dev'}
   region: ${self:custom.standardVars.region, 'eu-west-1'}
 
 resources:
@@ -74,29 +74,30 @@ resources:
         Subnets:
           - !Ref PrivateSubnetA
         Type: network
-    MyTargetGroup:
+    ApiEndpointTargetGroup:
       Type: AWS::ElasticLoadBalancingV2::TargetGroup
       Properties:
         HealthCheckEnabled: true
-        Name: MyTargets
+        Name: Bastion-vpc
         Port: 80
         Protocol: TCP
         TargetType: ip
         Targets:
+#          dynamically get target ip here if poss. should be the ip address of the eni associated with the vpc link.
           - Id: 10.2.1.10
             Port: 443
             AvailabilityZone: eu-west-1a
         VpcId: !Ref VPC
 
-    MyL:
+    NLBListener:
       Type: AWS::ElasticLoadBalancingV2::Listener
       Properties:
         DefaultActions:
-          - Action
-        LoadBalancerArn: String
-        Port: Integer
-        Protocol: String
-        SslPolicy: String
+          - Type: forward
+            TargetGroupArn: !Ref ApiEndpointTargetGroup
+        LoadBalancerArn: !Ref NLB
+        Port: 443
+        Protocol: TCP
 
     VpcLink:
       Type: AWS::ApiGateway::VpcLink
@@ -138,11 +139,110 @@ resources:
         PrivateDnsEnabled: true
         SecurityGroupIds:
           - !Ref EndpointSG
-        ServiceName: com.amazonaws.eu-west-1.execute-api
+        ServiceName: com.amazonaws.${self:provider.region}.execute-api
         SubnetIds:
           - !Ref PrivateSubnetA
         VpcEndpointType: Interface
         VpcId: !Ref VPC
+
+#!! Custom cfn lambda
+    VpceIpResolverLambda:
+      Type: AWS::Lambda::Function
+      Properties:
+        Code:
+          ZipFile: >
+            const AWS = require('aws-sdk');
+            const response = require('cfn-response');
+            exports.handler = async function(event, context) {
+              console.log(event);
+              console.log(JSON.stringify(event));
+              if (event.RequestType === 'Delete') {
+                response.send(event, context, response.SUCCESS);
+                return;
+              }
+              var input = parseInt(event.ResourceProperties.Input);
+              var responseData = {Value: input * 5};
+              const ec2 = new AWS.EC2({apiVersion: '2016-11-15'});
+              const vpce = await  ec2.describeVpcEndpoints({VpcEndpointIds: [event.ResourceProperties.VpceRef]}).promise();
+              console.log(vpce.VpcEndpoints[0].NetworkInterfaceIds);
+              const enis = vpce.VpcEndpoints[0].NetworkInterfaceIds;
+              const networkInterfaces = await ec2.describeNetworkInterfaces({NetworkInterfaceIds: enis}).promise();
+              console.log(JSON.stringify(networkInterfaces));
+              const ips = networkInterfaces.map(interface => interface.PrivateIpAddress);
+              console.log(ips);
+
+              console.log(event.ResourceProperties.VpceRef);
+              console.log(vpce);
+              response.send(event, context, response.SUCCESS, responseData);
+            };
+        Handler: index.handler
+        Runtime: nodejs12.x
+        Timeout: 30
+        Role: !GetAtt LambdaExecutionRole.Arn
+        FunctionName: bastion-vpc-lambda-eni-resolver
+
+    LambdaExecutionRole:
+      Type: AWS::IAM::Role
+      Properties:
+        AssumeRolePolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Principal:
+                Service:
+                  - lambda.amazonaws.com
+              Action:
+                - sts:AssumeRole
+        Path: "/"
+        Policies:
+          - PolicyName: root
+            PolicyDocument:
+              Version: '2012-10-17'
+              Statement:
+                - Effect: Allow
+                  Action:
+                    - logs:CreateLogGroup
+                    - logs:CreateLogStream
+                    - logs:PutLogEvents
+                  Resource: arn:aws:logs:*:*:*
+                - Effect: Allow
+                  Action:
+                    - ec2:DescribeVpcEndpoints
+                    - ec2:describeNetworkInterfaces
+                  Resource: "*"
+
+    VpceIpResolver:
+      Type: Custom::VpceIpResolver
+      Properties:
+        ServiceToken: !GetAtt VpceIpResolverLambda.Arn
+        VpceRef: !Ref VPCE
+        VpceRef1: !Ref VPCE
+        TargetGroupRef: !Ref ApiEndpointTargetGroup
+        FunctionName: !GetAtt VpceIpResolverLambda.Arn
+
+#  ZipFile: |
+#    var aws = require('aws-sdk')
+#    var response = require('cfn-response')
+#    exports.handler = function(event, context) {
+#        console.log("REQUEST RECEIVED:\n" + JSON.stringify(event))
+#        // For Delete requests, immediately send a SUCCESS response.
+#        if (event.RequestType == "Delete") {
+#            response.send(event, context, "SUCCESS")
+#            return
+#        }
+#        var responseStatus = "FAILED"
+#        var responseData = {}
+#        var functionName = event.ResourceProperties.FunctionName
+#        var lambda = new aws.Lambda()
+#        lambda.invoke({ FunctionName: functionName }, function(err, invokeResult) {
+#            if (err) {
+#                responseData = {Error: "Invoke call failed"}
+#                console.log(responseData.Error + ":\n", err)
+#            }
+#            else responseStatus = "SUCCESS"
+#            response.send(event, context, responseStatus, responseData)
+#        })
+#    }
 
 #    VpcPeeringConnection:
 #      Type: 'AWS::EC2::VPCPeeringConnection'

@@ -59,7 +59,7 @@
     "TesterLogGroup": {
       "Type": "AWS::Logs::LogGroup",
       "Properties": {
-        "LogGroupName": "/aws/lambda/bastion-apig-personal-tester"
+        "LogGroupName": "/aws/lambda/bastion-apig-dev-tester"
       }
     },
     "IamRoleLambdaExecution": {
@@ -87,7 +87,7 @@
               "Fn::Join": [
                 "-",
                 [
-                  "personal",
+                  "dev",
                   "bastion-apig",
                   "lambda"
                 ]
@@ -103,7 +103,7 @@
                   ],
                   "Resource": [
                     {
-                      "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/bastion-apig-personal*:*"
+                      "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/bastion-apig-dev*:*"
                     }
                   ]
                 },
@@ -114,7 +114,7 @@
                   ],
                   "Resource": [
                     {
-                      "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/bastion-apig-personal*:*:*"
+                      "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/bastion-apig-dev*:*:*"
                     }
                   ]
                 }
@@ -128,7 +128,7 @@
             "-",
             [
               "bastion-apig",
-              "personal",
+              "dev",
               {
                 "Ref": "AWS::Region"
               },
@@ -159,9 +159,9 @@
           "S3Bucket": {
             "Ref": "ServerlessDeploymentBucket"
           },
-          "S3Key": "serverless/bastion-apig/personal/1580769321614-2020-02-03T22:35:21.614Z/bastion-apig.zip"
+          "S3Key": "serverless/bastion-apig/dev/1581025783871-2020-02-06T21:49:43.871Z/bastion-apig.zip"
         },
-        "FunctionName": "bastion-apig-personal-tester",
+        "FunctionName": "bastion-apig-dev-tester",
         "Handler": "private-api-tester.handler",
         "MemorySize": 1024,
         "Role": {
@@ -190,10 +190,10 @@
         },
         "VpcConfig": {
           "SecurityGroupIds": [
-            "sg-0f60e44172814214c"
+            "sg-02c7834771b3ecaba"
           ],
           "SubnetIds": [
-            "subnet-08b46722d3c289a42"
+            "subnet-040787fb10bf8b33e"
           ]
         }
       },
@@ -202,7 +202,7 @@
         "IamRoleLambdaExecution"
       ]
     },
-    "TesterLambdaVersionK1q2GuGhEdehJnMWGketo193YaASW1kQuClu1Mboig": {
+    "TesterLambdaVersion5UmRRud9wvuH5x6RJ7b9NFtSa5MiAczfBmzdfQ8Jwvc": {
       "Type": "AWS::Lambda::Version",
       "DeletionPolicy": "Retain",
       "Properties": {
@@ -246,7 +246,7 @@
         "AuthorizationType": "NONE",
         "HttpMethod": "GET",
         "Integration": {
-          "ConnectionId": "vunnpf",
+          "ConnectionId": "ji4b5d",
           "ConnectionType": "VPC_LINK",
           "IntegrationHttpMethod": "POST",
           "Type": "HTTP_PROXY",
@@ -268,7 +268,7 @@
         "RestApiId": {
           "Ref": "ApiGatewayRestApi"
         },
-        "StageName": "personal"
+        "StageName": "dev"
       }
     }
   },
@@ -281,7 +281,7 @@
     "TesterLambdaFunctionQualifiedArn": {
       "Description": "Current Lambda function version",
       "Value": {
-        "Ref": "TesterLambdaVersionK1q2GuGhEdehJnMWGketo193YaASW1kQuClu1Mboig"
+        "Ref": "TesterLambdaVersion5UmRRud9wvuH5x6RJ7b9NFtSa5MiAczfBmzdfQ8Jwvc"
       }
     }
   }
