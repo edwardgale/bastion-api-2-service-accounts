@@ -148,6 +148,7 @@ resources:
 #!! Custom cfn lambda
     VpceIpResolverLambda:
       Type: AWS::Lambda::Function
+      DependsOn: VPCE
       Properties:
         Code:
           ZipFile: >
@@ -160,20 +161,23 @@ resources:
                 response.send(event, context, response.SUCCESS);
                 return;
               }
-              var input = parseInt(event.ResourceProperties.Input);
-              var responseData = {Value: input * 5};
-              const ec2 = new AWS.EC2({apiVersion: '2016-11-15'});
-              const vpce = await  ec2.describeVpcEndpoints({VpcEndpointIds: [event.ResourceProperties.VpceRef]}).promise();
-              console.log(vpce.VpcEndpoints[0].NetworkInterfaceIds);
-              const enis = vpce.VpcEndpoints[0].NetworkInterfaceIds;
-              const networkInterfaces = await ec2.describeNetworkInterfaces({NetworkInterfaceIds: enis}).promise();
-              console.log(JSON.stringify(networkInterfaces));
-              const ips = networkInterfaces.map(interface => interface.PrivateIpAddress);
-              console.log(ips);
+              try {
+                const ec2 = new AWS.EC2({apiVersion: '2016-11-15'});
+                try {
+                 const vpce = await  ec2.describeVpcEndpoints({VpcEndpointIds: [event.ResourceProperties.VpceRef]}).promise();
+                 console.log(vpce.VpcEndpoints[0].NetworkInterfaceIds);
+                 const enis = vpce.VpcEndpoints[0].NetworkInterfaceIds;
+                 const networkInterfaces = await ec2.describeNetworkInterfaces({NetworkInterfaceIds: enis}).promise();
+                 console.log(JSON.stringify(networkInterfaces));
+                 const ips = networkInterfaces.map(interface => interface.PrivateIpAddress);
+                 console.log(ips);
 
-              console.log(event.ResourceProperties.VpceRef);
-              console.log(vpce);
-              response.send(event, context, response.SUCCESS, responseData);
+                 console.log(event.ResourceProperties.VpceRef);
+                 console.log(vpce);`              }
+                } catch (e) {
+                 console.log(e);`              }
+                }
+              response.send(event, context, response.SUCCESS, 'hllo');
             };
         Handler: index.handler
         Runtime: nodejs12.x
@@ -213,6 +217,7 @@ resources:
 
     VpceIpResolver:
       Type: Custom::VpceIpResolver
+      DependsOn: VPCE
       Properties:
         ServiceToken: !GetAtt VpceIpResolverLambda.Arn
         VpceRef: !Ref VPCE
