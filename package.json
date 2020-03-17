@@ -1,0 +1,22 @@
+{
+  "name": "bastion-api-2-service-accounts",
+  "version": "1.0.0",
+  "description": "![./images/api-front-door-overview.pdf](./images/api-front-door-overview.jpg) ## Deployment 1. Deploy service-apig to account 2 1. Update cfn of public-vpi-api with details from service-apig 1. Deploy public-vpc-api to account 1",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/edwardgale/bastion-api-2-service-accounts.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/edwardgale/bastion-api-2-service-accounts/issues"
+  },
+  "homepage": "https://github.com/edwardgale/bastion-api-2-service-accounts#readme",
+  "devDependencies": {
+    "serverless-pseudo-parameters": "^2.5.0"
+  }
+}
